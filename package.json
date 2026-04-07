@@ -1,0 +1,38 @@
+{
+  "name": "sketch-party-v2",
+  "version": "1.0.0",
+  "description": "Sketch Party Chrome extension (Manifest v3)",
+  "main": "src/manifest.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/burakhrk/sketch-party-v2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/burakhrk/sketch-party-v2/issues"
+  },
+  "homepage": "https://github.com/burakhrk/sketch-party-v2#readme",
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.4.0",
+    "@types/chrome": "^0.1.39",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.6"
+  }
+}

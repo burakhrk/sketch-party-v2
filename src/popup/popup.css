@@ -1,0 +1,49 @@
+:root {
+  font-family: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  color: #e5e7eb;
+  background: radial-gradient(circle at 20% 20%, #0ea5e9 10%, transparent 25%),
+    radial-gradient(circle at 80% 0%, #a855f7 12%, transparent 24%),
+    #0b1021;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 240px;
+}
+
+.popup-shell {
+  padding: 18px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+h1 {
+  color: #f8fafc;
+  margin: 4px 0;
+  font-size: 20px;
+}
+
+.muted {
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.5;
+  font-size: 14px;
+}
