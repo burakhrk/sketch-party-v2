@@ -2,6 +2,7 @@ export type Account = {
   accountId?: string;
   email?: string;
   plan?: 'free' | 'pro';
+  accessToken?: string;
 };
 
 export type Friend = {

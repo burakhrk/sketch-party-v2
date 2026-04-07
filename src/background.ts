@@ -6,6 +6,8 @@ import {
   HUB_BASE,
   PAYMENT_URL,
   LOGIN_URL,
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
   POLL_INTERVAL_MS,
   RATE_LIMIT_BASE_MS,
   RATE_LIMIT_PRO_MS,
@@ -96,14 +98,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse(await sendEffect(message.friendId, message.effectId as EffectId));
         break;
       case 'open-login':
-        // Open Supabase login in a small popup window to avoid navigating the user's tab
-        await chrome.windows.create({
-          url: LOGIN_URL,
-          type: 'popup',
-          width: 480,
-          height: 640
-        });
-        sendResponse({ ok: true });
+        await launchSupabaseLogin(sendResponse);
         break;
       case 'open-paywall':
         await openPayment(message.context ?? 'popup');
@@ -128,6 +123,59 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   })();
   return true;
 });
+
+const parseHashParams = (url: string) => {
+  const hash = url.split('#')[1] || '';
+  const params = new URLSearchParams(hash);
+  const obj: Record<string, string> = {};
+  params.forEach((v, k) => (obj[k] = v));
+  return obj;
+};
+
+const fetchSupabaseUser = async (accessToken: string) => {
+  if (!SUPABASE_ANON_KEY) throw new Error('Supabase anon key missing');
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: SUPABASE_ANON_KEY
+    }
+  });
+  if (!res.ok) throw new Error('Failed to fetch user');
+  return (await res.json()) as { id: string; email: string };
+};
+
+const launchSupabaseLogin = async (respond: (res: any) => void) => {
+  const redirect = chrome.identity.getRedirectURL();
+  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirect)}&scope=openid%20email%20profile`;
+  chrome.identity.launchWebAuthFlow(
+    { url: authUrl, interactive: true },
+    async (responseUrl) => {
+      if (chrome.runtime.lastError) {
+        respond({ ok: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      if (!responseUrl) {
+        respond({ ok: false, error: 'No response URL' });
+        return;
+      }
+      const hashParams = parseHashParams(responseUrl);
+      const accessToken = hashParams['access_token'];
+      if (!accessToken) {
+        respond({ ok: false, error: 'Missing access token' });
+        return;
+      }
+      try {
+        const user = await fetchSupabaseUser(accessToken);
+        state.account = { accountId: user.id, email: user.email, plan: 'free', accessToken };
+        await storage.setAccount(state.account);
+        await enqueueEvent({ eventName: 'login', clientId: state.clientId, accountId: user.id, email: user.email });
+        respond({ ok: true, account: state.account });
+      } catch (err: any) {
+        respond({ ok: false, error: err?.message || 'Login failed' });
+      }
+    }
+  );
+};
 
 const getUiState = async () => ({
   clientId: state.clientId,

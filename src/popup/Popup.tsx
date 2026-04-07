@@ -112,7 +112,7 @@ const Popup: React.FC = () => {
             <div className="demo-card">🛟 Receive toggle & mute</div>
             <div className="demo-card">🧑‍🤝‍🧑 Friend-only sending</div>
           </div>
-          <button className="button-cta google" onClick={openLogin}>Sign in with Google (opens panel)</button>
+          <button className="button-cta google" onClick={openLogin}>Sign in with Google (popup)</button>
           <div className="steps">
             <div className="step">1. Sign in with Google</div>
             <div className="step">2. Add a friend code</div>
