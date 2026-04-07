@@ -3,14 +3,14 @@ import { defineManifest } from '@crxjs/vite-plugin';
 const manifest = defineManifest({
   manifest_version: 3,
   name: 'Sketch Party',
-  description: 'Collaborative sketch overlay with Patreon-powered Pro upgrades.',
+  description: 'Send playful effects to friends on any page. Patreon-powered Pro.',
   version: '1.0.0',
   action: {
-    default_popup: 'popup.html',
+    default_popup: 'src/popup.html',
     default_title: 'Sketch Party'
   },
   background: {
-    service_worker: 'background.js',
+    service_worker: 'src/background.ts',
     type: 'module'
   },
   icons: {
@@ -27,13 +27,13 @@ const manifest = defineManifest({
   content_scripts: [
     {
       matches: ['http://*/*', 'https://*/*'],
-      js: ['contentScripts/effects.js'],
+      js: ['src/contentScripts/effects.ts'],
       run_at: 'document_idle'
     }
   ],
   web_accessible_resources: [
     {
-      resources: ['auth-callback.html', 'board.html', 'assets/*'],
+      resources: ['src/auth-callback.html', 'assets/*'],
       matches: ['*://*/*']
     }
   ]
