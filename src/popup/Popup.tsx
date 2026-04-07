@@ -72,11 +72,20 @@ const Popup: React.FC = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tabId = tabs[0]?.id;
       if (tabId !== undefined) {
-        chrome.tabs.sendMessage(tabId, {
-          type: 'effects:deliver',
-          payload: { id: selectedEffect, from: 'preview', to: 'preview', sentAt: Date.now() }
-        });
-        setToast({ text: 'Preview sent to this tab', tone: 'info' });
+        chrome.tabs.sendMessage(
+          tabId,
+          {
+            type: 'effects:deliver',
+            payload: { id: selectedEffect, from: 'preview', to: 'preview', sentAt: Date.now() }
+          },
+          (resp) => {
+            if (chrome.runtime.lastError || !resp?.ok) {
+              setToast({ text: 'Open a normal webpage and try preview again.', tone: 'error' });
+            } else {
+              setToast({ text: 'Preview sent to this tab', tone: 'info' });
+            }
+          }
+        );
       }
     });
   };
@@ -134,7 +143,10 @@ const Popup: React.FC = () => {
             <div className="demo-card">🛟 Receive toggle & mute</div>
             <div className="demo-card">🧑‍🤝‍🧑 Friend-only sending</div>
           </div>
-          <button className="button-cta google" onClick={openLogin}>Sign in with Google (popup)</button>
+          <button className="button-cta google" onClick={openLogin}>
+            <span className="google-g">G</span>
+            <span>Sign in with Google</span>
+          </button>
           <div className="steps">
             <div className="step">1. Sign in with Google</div>
             <div className="step">2. Add a friend code</div>

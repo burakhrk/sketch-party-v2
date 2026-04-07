@@ -1,11 +1,13 @@
 import confetti from 'canvas-confetti';
 import type { EffectMessage } from '../shared/types';
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'effects:deliver') {
     const payload = message.payload as EffectMessage;
     runEffect(payload);
+    sendResponse?.({ ok: true });
   }
+  return true;
 });
 
 const runEffect = (payload: EffectMessage) => {
