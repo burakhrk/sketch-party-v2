@@ -18,7 +18,6 @@ import { EFFECTS } from './shared/effects';
 import { enqueueEvent, flushAnalytics } from './shared/analytics';
 import { storage } from './shared/storage';
 import type { Account, EffectId, EffectMessage, Friend, RateState } from './shared/types';
-import { supabase } from './shared/supabaseClient';
 
 const state = {
   clientId: '' as string,
@@ -140,21 +139,13 @@ const fetchSupabaseUser = async (accessToken: string) => {
 
 const launchSupabaseLogin = async (respond: (res: any) => void) => {
   const redirect = chrome.identity.getRedirectURL();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirect,
-      scopes: 'openid email profile',
-      queryParams: { app_id: 'sketch-party' },
-      skipBrowserRedirect: true,
-      flowType: 'implicit'
-    }
-  });
-  if (error || !data?.url) {
-    respond({ ok: false, error: error?.message || 'Could not start OAuth' });
-    return;
-  }
-  const authUrl = data.url;
+  const oauthState = crypto.randomUUID();
+  state.oauthState = oauthState;
+  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
+    redirect
+  )}&response_type=token&scope=openid%20email%20profile&state=${encodeURIComponent(
+    oauthState
+  )}&data=${encodeURIComponent(JSON.stringify({ app_id: 'sketch-party' }))}`;
 
   chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
     if (chrome.runtime.lastError) {
@@ -170,6 +161,12 @@ const launchSupabaseLogin = async (respond: (res: any) => void) => {
     const params = new URLSearchParams(hash);
     const accessToken = params.get('access_token');
     const email = params.get('email') || undefined;
+    const returnedState = params.get('state');
+    if (state.oauthState && returnedState !== state.oauthState) {
+      respond({ ok: false, error: 'OAuth state mismatch' });
+      return;
+    }
+    state.oauthState = undefined;
     try {
       if (!accessToken) throw new Error('Missing access token');
       const user = await fetchSupabaseUser(accessToken);
