@@ -29,7 +29,8 @@ const state = {
   pending: [] as Friend[],
   rateState: { perSenderTimestamps: {} } as RateState,
   inboxPoll: undefined as number | undefined,
-  sessionStarted: false
+  sessionStarted: false,
+  oauthState: undefined as string | undefined
 };
 
 const init = async () => {
@@ -138,9 +139,13 @@ const fetchSupabaseUser = async (accessToken: string) => {
 
 const launchSupabaseLogin = async (respond: (res: any) => void) => {
   const redirect = chrome.identity.getRedirectURL();
+  const oauthState = crypto.randomUUID();
+  state.oauthState = oauthState;
   const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
     redirect
-  )}&response_type=token&scope=openid%20email%20profile&data=${encodeURIComponent(JSON.stringify({ app_id: 'sketch-party' }))}`;
+  )}&response_type=token&scope=openid%20email%20profile&state=${encodeURIComponent(
+    oauthState
+  )}&data=${encodeURIComponent(JSON.stringify({ app_id: 'sketch-party' }))}`;
 
   chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
     if (chrome.runtime.lastError) {
@@ -155,6 +160,12 @@ const launchSupabaseLogin = async (respond: (res: any) => void) => {
     const hash = responseUrl.split('#')[1] || '';
     const params = new URLSearchParams(hash);
     const accessToken = params.get('access_token');
+    const returnedState = params.get('state');
+    if (state.oauthState && returnedState !== state.oauthState) {
+      respond({ ok: false, error: 'OAuth state mismatch' });
+      return;
+    }
+    state.oauthState = undefined;
     const email = params.get('email') || undefined;
     try {
       if (!accessToken) throw new Error('Missing access token');
