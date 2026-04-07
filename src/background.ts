@@ -18,7 +18,6 @@ import { EFFECTS } from './shared/effects';
 import { enqueueEvent, flushAnalytics } from './shared/analytics';
 import { storage } from './shared/storage';
 import type { Account, EffectId, EffectMessage, Friend, RateState } from './shared/types';
-import { supabase } from './shared/supabaseClient';
 
 const state = {
   clientId: '' as string,
@@ -139,22 +138,9 @@ const fetchSupabaseUser = async (accessToken: string) => {
 
 const launchSupabaseLogin = async (respond: (res: any) => void) => {
   const redirect = chrome.identity.getRedirectURL();
-  // Use Supabase helper to build the Google OAuth URL, skipping automatic browser redirect.
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirect,
-      scopes: 'openid email profile',
-      queryParams: { app_id: 'sketch-party' },
-      skipBrowserRedirect: true,
-      flowType: 'implicit'
-    }
-  });
-  if (error || !data?.url) {
-    respond({ ok: false, error: error?.message || 'Could not start OAuth' });
-    return;
-  }
-  const authUrl = data.url;
+  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
+    redirect
+  )}&response_type=token&scope=openid%20email%20profile&data=${encodeURIComponent(JSON.stringify({ app_id: 'sketch-party' }))}`;
 
   chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
     if (chrome.runtime.lastError) {
