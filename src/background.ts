@@ -194,6 +194,8 @@ const launchSupabaseLogin = async (respond: (res: any) => void) => {
       state.account = { accountId: user.id, email: user.email, plan: 'free', accessToken: session.access_token };
       await storage.setAccount(state.account);
       await enqueueEvent({ eventName: 'login', clientId: state.clientId, accountId: user.id, email: user.email });
+      // Notify any open popup to refresh immediately
+      chrome.runtime.sendMessage({ type: 'account-updated', account: state.account });
       respond({ ok: true, account: state.account });
     } catch (err: any) {
       respond({ ok: false, error: err?.message || 'Login failed' });

@@ -28,6 +28,13 @@ export const useExtensionState = () => {
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'track-open' }, () => {});
     refresh();
+    const listener = (msg: any) => {
+      if (msg?.type === 'account-updated') {
+        refresh();
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
   }, []);
 
   return { state, loading, refresh };
