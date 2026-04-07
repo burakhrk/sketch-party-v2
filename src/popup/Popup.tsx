@@ -21,6 +21,7 @@ const Popup: React.FC = () => {
     () => EFFECTS.filter((fx) => (fx.pro ? showPro : true)),
     [showPro]
   );
+  const journeyStage = !isLoggedIn ? 'signin' : acceptedFriends.length === 0 ? 'add-friend' : 'send';
 
   const toggleReceive = (enabled: boolean) => {
     chrome.runtime.sendMessage({ type: 'toggle-receive', enabled }, refresh);
@@ -104,8 +105,13 @@ const Popup: React.FC = () => {
 
       {!isLoggedIn && (
         <section className="card hero">
-          <h2>Sign in to start</h2>
-          <p className="muted">Use Google to unlock friends, send effects, and track your party.</p>
+          <h2>Send party effects</h2>
+          <p className="muted">Blast confetti, bursts, and pulses to friends’ screens—only when they allow it.</p>
+          <div className="demo-grid">
+            <div className="demo-card">🎉 Confetti on pages</div>
+            <div className="demo-card">🛟 Receive toggle & mute</div>
+            <div className="demo-card">🧑‍🤝‍🧑 Friend-only sending</div>
+          </div>
           <button className="button-cta google" onClick={openLogin}>Sign in with Google</button>
           <div className="steps">
             <div className="step">1. Sign in with Google</div>
@@ -172,7 +178,7 @@ const Popup: React.FC = () => {
             placeholder="Friend code or account id"
             disabled={!isLoggedIn}
           />
-          <button className="secondary" onClick={addFriend} disabled={!isLoggedIn}>
+          <button className={`secondary ${journeyStage === 'add-friend' ? 'pulse' : ''}`} onClick={addFriend} disabled={!isLoggedIn}>
             Add
           </button>
         </div>
@@ -192,7 +198,7 @@ const Popup: React.FC = () => {
         {!pendingFriends.length && !acceptedFriends.length ? <p className="muted tiny">No friends yet.</p> : null}
         {!acceptedFriends.length && isLoggedIn && (
           <div className="callout accent">
-            Add a friend to unlock more effects. Share your friend code or ask them for theirs.
+            Add a friend to unlock more effects. Share your friend code or ask them for theirs. Try preview to see how it looks.
           </div>
         )}
       </section>

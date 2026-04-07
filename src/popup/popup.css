@@ -76,6 +76,21 @@ h4 {
   border-color: rgba(255, 255, 255, 0.16);
 }
 
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.demo-card {
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  text-align: center;
+}
+
 .card.slim {
   gap: 6px;
 }
@@ -253,6 +268,10 @@ h4 {
   text-align: center;
 }
 
+.secondary.pulse {
+  animation: pulse-btn 1.4s ease-in-out infinite;
+}
+
 .friend-row {
   display: flex;
   gap: 8px;
@@ -323,4 +342,16 @@ h4 {
   color: #22d3ee;
   font-size: 12px;
   margin: 0;
+}
+
+@keyframes pulse-btn {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(34, 211, 238, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+  }
 }
