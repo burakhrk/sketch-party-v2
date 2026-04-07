@@ -1,6 +1,6 @@
 {
   "name": "sketch-party-v2",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sketch Party Chrome extension (Manifest v3)",
   "main": "src/manifest.ts",
   "scripts": {

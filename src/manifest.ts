@@ -4,7 +4,7 @@ const manifest = defineManifest({
   manifest_version: 3,
   name: 'Sketch Party',
   description: 'Send playful effects to friends on any page. Patreon-powered Pro.',
-  version: '1.0.0',
+  version: '1.0.1',
   action: {
     default_popup: 'src/popup.html',
     default_title: 'Sketch Party'

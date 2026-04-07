@@ -135,6 +135,7 @@ const getUiState = async () => ({
 });
 
 const addFriend = async (friendId: string, label?: string) => {
+  if (!state.account?.accountId) return { ok: false, error: 'Please sign in with Google first.' };
   if (!friendId) return { ok: false, error: 'missing friend id' };
   const exists = state.friends.find((f) => f.id === friendId) || state.pending.find((f) => f.id === friendId);
   if (exists) return { ok: true, status: exists.status };
@@ -146,6 +147,7 @@ const addFriend = async (friendId: string, label?: string) => {
 };
 
 const acceptFriend = async (friendId: string) => {
+  if (!state.account?.accountId) return { ok: false, error: 'Please sign in with Google first.' };
   const pending = state.pending.find((f) => f.id === friendId);
   if (pending) {
     pending.status = 'accepted';
@@ -188,6 +190,7 @@ const checkRateLimit = (targetId: string) => {
 };
 
 const sendEffect = async (friendId: string, effectId: EffectId) => {
+  if (!state.account?.accountId) return { ok: false, error: 'Please sign in with Google first.' };
   if (!state.receiveEnabled) return { ok: false, error: 'Receiving is off.' };
   if (Date.now() < state.mutedUntil) return { ok: false, error: 'Muted.' };
   if (state.blocks.includes(friendId)) return { ok: false, error: 'Blocked.' };

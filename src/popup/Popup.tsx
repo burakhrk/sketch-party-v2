@@ -14,6 +14,13 @@ const Popup: React.FC = () => {
   const acceptedFriends = useMemo(() => state?.friends?.filter((f) => f.status === 'accepted') ?? [], [state]);
   const pendingFriends = useMemo(() => state?.pending ?? [], [state]);
   const receiveLabel = state?.receiveEnabled ? 'Receiving On' : 'Receiving Off';
+  const isLoggedIn = !!state?.account?.accountId;
+  const isPro = state?.account?.plan === 'pro';
+  const showPro = isLoggedIn && acceptedFriends.length > 0;
+  const availableEffects = useMemo(
+    () => EFFECTS.filter((fx) => (fx.pro ? showPro : true)),
+    [showPro]
+  );
 
   const toggleReceive = (enabled: boolean) => {
     chrome.runtime.sendMessage({ type: 'toggle-receive', enabled }, refresh);
@@ -50,6 +57,19 @@ const Popup: React.FC = () => {
     });
   };
 
+  const previewEffect = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tabId = tabs[0]?.id;
+      if (tabId !== undefined) {
+        chrome.tabs.sendMessage(tabId, {
+          type: 'effects:deliver',
+          payload: { id: selectedEffect, from: 'preview', to: 'preview', sentAt: Date.now() }
+        });
+        setStatus('Preview sent to this tab');
+      }
+    });
+  };
+
   const openPaywall = () => chrome.runtime.sendMessage({ type: 'open-paywall', context: 'popup' });
   const openLogin = () => chrome.runtime.sendMessage({ type: 'open-login' });
 
@@ -63,23 +83,37 @@ const Popup: React.FC = () => {
   }
 
   const receivingOff = !state.receiveEnabled || Date.now() < state.mutedUntil;
-  const isPro = state.account?.plan === 'pro';
 
   return (
     <div className="popup-shell">
       <div className="top-row">
         <div>
           <div className="badge">Sketch Party</div>
-          <p className="muted tiny">Client: {state.clientId.slice(0, 6)} · {isPro ? 'Pro' : 'Free'}</p>
+          <p className="muted tiny">Client: {state.clientId.slice(0, 6)} · {isLoggedIn ? 'Signed in' : 'Not signed in'}</p>
         </div>
-        <button className={`pill-btn ${state.receiveEnabled ? 'on' : 'off'}`} onClick={() => toggleReceive(!state.receiveEnabled)}>
-          {receiveLabel}
-        </button>
+        <label className="switch">
+          <input type="checkbox" checked={state.receiveEnabled} onChange={(e) => toggleReceive(e.target.checked)} />
+          <span className="slider" />
+          <span className="switch-label">{receiveLabel}</span>
+        </label>
       </div>
 
       {Date.now() < state.mutedUntil ? (
         <div className="callout warning">Muted for {Math.round((state.mutedUntil - Date.now()) / 60000)} min</div>
       ) : null}
+
+      {!isLoggedIn && (
+        <section className="card hero">
+          <h2>Sign in to start</h2>
+          <p className="muted">Use Google to unlock friends, send effects, and track your party.</p>
+          <button className="button-cta google" onClick={openLogin}>Sign in with Google</button>
+          <div className="steps">
+            <div className="step">1. Sign in with Google</div>
+            <div className="step">2. Add a friend code</div>
+            <div className="step">3. Tap Preview, then Send</div>
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <div className="card-head">
@@ -89,11 +123,11 @@ const Popup: React.FC = () => {
         <div className="chips-row">
           <span className="chip">{receiveLabel}</span>
           <span className="chip outline">{acceptedFriends.length} friends</span>
-          <span className="chip outline">{isPro ? 'Pro tier' : 'Free tier'}</span>
+          {showPro && <span className="chip outline">{isPro ? 'Pro tier' : 'Free tier'}</span>}
         </div>
         <label className="field">
           <span>Friend</span>
-          <select value={selectedFriend} onChange={(e) => setSelectedFriend(e.target.value)}>
+          <select value={selectedFriend} onChange={(e) => setSelectedFriend(e.target.value)} disabled={!isLoggedIn}>
             <option value="">Pick a friend</option>
             {acceptedFriends.map((f) => (
               <option key={f.id} value={f.id}>
@@ -103,12 +137,12 @@ const Popup: React.FC = () => {
           </select>
         </label>
         <div className="effect-grid">
-          {EFFECTS.map((fx) => (
+          {availableEffects.map((fx) => (
             <button
               key={fx.id}
               className={`effect-tile ${selectedEffect === fx.id ? 'active' : ''} ${fx.pro ? 'pro' : ''}`}
               onClick={() => setSelectedEffect(fx.id)}
-              disabled={fx.pro && !isPro}
+              disabled={!isLoggedIn || (fx.pro && !isPro)}
               title={fx.description}
             >
               <span className="label">{fx.label}</span>
@@ -116,10 +150,14 @@ const Popup: React.FC = () => {
             </button>
           ))}
         </div>
-        <button className="button-cta" onClick={sendEffect} disabled={receivingOff}>
+        <button className="button-cta" onClick={sendEffect} disabled={receivingOff || !isLoggedIn}>
           Send effect
         </button>
+        <button className="secondary preview" onClick={previewEffect}>
+          Preview on this tab
+        </button>
         {receivingOff && <p className="muted tiny">Turn receiving on to send.</p>}
+        {!isLoggedIn && <p className="muted tiny">Sign in with Google to start sending.</p>}
       </section>
 
       <section className="card">
@@ -132,8 +170,9 @@ const Popup: React.FC = () => {
             value={addFriendValue}
             onChange={(e) => setAddFriendValue(e.target.value)}
             placeholder="Friend code or account id"
+            disabled={!isLoggedIn}
           />
-          <button className="secondary" onClick={addFriend}>
+          <button className="secondary" onClick={addFriend} disabled={!isLoggedIn}>
             Add
           </button>
         </div>
@@ -151,6 +190,11 @@ const Popup: React.FC = () => {
           </div>
         ) : null}
         {!pendingFriends.length && !acceptedFriends.length ? <p className="muted tiny">No friends yet.</p> : null}
+        {!acceptedFriends.length && isLoggedIn && (
+          <div className="callout accent">
+            Add a friend to unlock more effects. Share your friend code or ask them for theirs.
+          </div>
+        )}
       </section>
 
       <section className="card slim">
@@ -159,25 +203,27 @@ const Popup: React.FC = () => {
         </div>
         <div className="controls-grid">
           <button className="secondary" onClick={() => mute(60)}>Mute 1h</button>
-          <button className="secondary" onClick={openLogin}>Login</button>
-          <button className="secondary" onClick={openPaywall}>Connect Patreon</button>
+          <button className="secondary" onClick={openLogin}>Sign in with Google</button>
+          {showPro && <button className="secondary" onClick={openPaywall}>Go Pro</button>}
         </div>
       </section>
 
-      <section className="card pro-card">
-        <div className="card-head">
-          <h3>Pro unlocks</h3>
-          <span className="pill small">Patreon</span>
-        </div>
-        <ul className="perk-list">
-          <li>Higher send rate & burst cap</li>
-          <li>Extra effects (fireworks, future drops)</li>
-          <li>Priority delivery to friends</li>
-          <li>Group send (up to 3) — coming soon</li>
-        </ul>
-        <button className="button-cta" onClick={openPaywall}>Connect Patreon</button>
-        <p className="muted tiny">You’ll be routed to the hub payment page; Google login then Patreon connect.</p>
-      </section>
+      {showPro && (
+        <section className="card pro-card">
+          <div className="card-head">
+            <h3>Pro unlocks</h3>
+            <span className="pill small">Patreon</span>
+          </div>
+          <ul className="perk-list">
+            <li>Higher send rate & burst cap</li>
+            <li>Extra effects (fireworks, future drops)</li>
+            <li>Priority delivery to friends</li>
+            <li>Group send (up to 3) — coming soon</li>
+          </ul>
+          <button className="button-cta" onClick={openPaywall}>Go Pro</button>
+          <p className="muted tiny">You’ll be routed to the payment page; Google login first, then link Patreon.</p>
+        </section>
+      )}
 
       {status ? <p className="status">{status}</p> : null}
     </div>
