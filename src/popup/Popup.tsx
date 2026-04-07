@@ -13,6 +13,7 @@ const Popup: React.FC = () => {
 
   const acceptedFriends = useMemo(() => state?.friends?.filter((f) => f.status === 'accepted') ?? [], [state]);
   const pendingFriends = useMemo(() => state?.pending ?? [], [state]);
+  const receiveLabel = state?.receiveEnabled ? 'Receiving On' : 'Receiving Off';
 
   const toggleReceive = (enabled: boolean) => {
     chrome.runtime.sendMessage({ type: 'toggle-receive', enabled }, refresh);
@@ -72,7 +73,7 @@ const Popup: React.FC = () => {
           <p className="muted tiny">Client: {state.clientId.slice(0, 6)} · {isPro ? 'Pro' : 'Free'}</p>
         </div>
         <button className={`pill-btn ${state.receiveEnabled ? 'on' : 'off'}`} onClick={() => toggleReceive(!state.receiveEnabled)}>
-          {state.receiveEnabled ? 'Receiving On' : 'Receiving Off'}
+          {receiveLabel}
         </button>
       </div>
 
@@ -84,6 +85,11 @@ const Popup: React.FC = () => {
         <div className="card-head">
           <h2>Send an effect</h2>
           <span className="muted tiny">Rate ~{Math.round(state.rateLimitMs / 1000)}s • per-minute cap applies</span>
+        </div>
+        <div className="chips-row">
+          <span className="chip">{receiveLabel}</span>
+          <span className="chip outline">{acceptedFriends.length} friends</span>
+          <span className="chip outline">{isPro ? 'Pro tier' : 'Free tier'}</span>
         </div>
         <label className="field">
           <span>Friend</span>
@@ -156,6 +162,21 @@ const Popup: React.FC = () => {
           <button className="secondary" onClick={openLogin}>Login</button>
           <button className="secondary" onClick={openPaywall}>Connect Patreon</button>
         </div>
+      </section>
+
+      <section className="card pro-card">
+        <div className="card-head">
+          <h3>Pro unlocks</h3>
+          <span className="pill small">Patreon</span>
+        </div>
+        <ul className="perk-list">
+          <li>Higher send rate & burst cap</li>
+          <li>Extra effects (fireworks, future drops)</li>
+          <li>Priority delivery to friends</li>
+          <li>Group send (up to 3) — coming soon</li>
+        </ul>
+        <button className="button-cta" onClick={openPaywall}>Connect Patreon</button>
+        <p className="muted tiny">You’ll be routed to the hub payment page; Google login then Patreon connect.</p>
       </section>
 
       {status ? <p className="status">{status}</p> : null}

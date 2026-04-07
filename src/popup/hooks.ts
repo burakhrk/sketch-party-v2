@@ -26,6 +26,7 @@ export const useExtensionState = () => {
   };
 
   useEffect(() => {
+    chrome.runtime.sendMessage({ type: 'track-open' }, () => {});
     refresh();
   }, []);
 

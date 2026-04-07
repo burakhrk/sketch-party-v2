@@ -78,6 +78,24 @@ h4 {
   align-items: center;
 }
 
+.chips-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.chip.outline {
+  background: transparent;
+}
+
 .pill-btn {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
@@ -208,6 +226,25 @@ h4 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+
+.pro-card {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 10px 30px rgba(34, 211, 238, 0.08);
+}
+
+.perk-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+
+.pill.small {
+  font-size: 10px;
+  padding: 3px 7px;
 }
 
 .status {

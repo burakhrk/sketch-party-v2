@@ -29,7 +29,11 @@
       const accountId = params.get('accountId') || params.get('userId') || undefined;
       const email = params.get('email') || undefined;
       const plan = params.get('plan') || undefined;
+      const patreonStatus = params.get('patreon') || params.get('status');
       chrome.runtime.sendMessage({ type: 'auth-callback', accountId, email, plan });
+      if (patreonStatus) {
+        chrome.runtime.sendMessage({ type: 'patreon-result', success: patreonStatus === 'success' });
+      }
       document.getElementById('card').textContent = 'You are signed in. You can close this tab.';
       setTimeout(() => window.close(), 1500);
     </script>

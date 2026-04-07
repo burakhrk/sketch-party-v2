@@ -25,7 +25,8 @@ const state = {
   blocks: [] as string[],
   pending: [] as Friend[],
   rateState: { perSenderTimestamps: {} } as RateState,
-  inboxPoll: undefined as number | undefined
+  inboxPoll: undefined as number | undefined,
+  sessionStarted: false
 };
 
 const init = async () => {
@@ -67,6 +68,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       case 'get-state':
         sendResponse(await getUiState());
         break;
+      case 'track-open':
+        await enqueueEvent({ eventName: 'open', clientId: state.clientId, accountId: state.account?.accountId, email: state.account?.email });
+        sendResponse({ ok: true });
+        break;
       case 'toggle-receive':
         state.receiveEnabled = !!message.enabled;
         await storage.setReceiveEnabled(state.receiveEnabled);
@@ -95,6 +100,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         break;
       case 'open-paywall':
         await openPayment(message.context ?? 'popup');
+        sendResponse({ ok: true });
+        break;
+      case 'patreon-result':
+        await enqueueEvent({
+          eventName: message.success ? 'connect_patreon_success' : 'connect_patreon_fail',
+          clientId: state.clientId,
+          accountId: state.account?.accountId,
+          email: state.account?.email
+        });
         sendResponse({ ok: true });
         break;
       case 'auth-callback':
@@ -182,6 +196,11 @@ const sendEffect = async (friendId: string, effectId: EffectId) => {
   const rate = checkRateLimit(friendId);
   if (!rate.ok) return rate;
 
+  if (!state.sessionStarted) {
+    state.sessionStarted = true;
+    await enqueueEvent({ eventName: 'create_session', clientId: state.clientId, accountId: state.account?.accountId, email: state.account?.email });
+  }
+
   const payload: EffectMessage = {
     id: effectId,
     from: state.clientId,
@@ -267,6 +286,7 @@ const openPayment = async (context: string) => {
     context
   });
   const url = `${PAYMENT_URL}?${search.toString()}`;
+  await enqueueEvent({ eventName: 'open_paywall', clientId: state.clientId, accountId: state.account?.accountId, email: state.account?.email, properties: { context } });
   await chrome.tabs.create({ url });
   await enqueueEvent({ eventName: 'open_checkout', clientId: state.clientId, accountId: state.account?.accountId, email: state.account?.email, properties: { context } });
 };
