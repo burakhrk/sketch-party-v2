@@ -22,7 +22,9 @@ const manifest = defineManifest({
   permissions: ['storage', 'alarms', 'identity', 'tabs'],
   host_permissions: [
     'https://harika-extensions-backend.notetaker-app-burak.workers.dev/*',
-    'https://extensions-hub-sites.vercel.app/*'
+    'https://extensions-hub-sites.vercel.app/*',
+    'http://*/*',
+    'https://*/*'
   ],
   content_scripts: [
     {
