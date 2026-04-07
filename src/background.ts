@@ -96,7 +96,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse(await sendEffect(message.friendId, message.effectId as EffectId));
         break;
       case 'open-login':
-        await chrome.tabs.create({ url: LOGIN_URL });
+        // Open Supabase login in a small popup window to avoid navigating the user's tab
+        await chrome.windows.create({
+          url: LOGIN_URL,
+          type: 'popup',
+          width: 480,
+          height: 640
+        });
         sendResponse({ ok: true });
         break;
       case 'open-paywall':
