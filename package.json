@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/burakhrk/sketch-party-v2#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.3",
     "canvas-confetti": "^1.9.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
