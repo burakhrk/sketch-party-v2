@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { EFFECTS } from '../shared/effects';
 import type { EffectId } from '../shared/types';
 import { useExtensionState } from './hooks';
@@ -9,7 +9,7 @@ const Popup: React.FC = () => {
   const [selectedFriend, setSelectedFriend] = useState<string>('');
   const [selectedEffect, setSelectedEffect] = useState<EffectId>('confetti');
   const [addFriendValue, setAddFriendValue] = useState('');
-  const [status, setStatus] = useState<string>('');
+  const [toast, setToast] = useState<{ text: string; tone?: 'info' | 'success' | 'error' } | null>(null);
 
   const acceptedFriends = useMemo(() => state?.friends?.filter((f) => f.status === 'accepted') ?? [], [state]);
   const pendingFriends = useMemo(() => state?.pending ?? [], [state]);
@@ -34,27 +34,37 @@ const Popup: React.FC = () => {
   const addFriend = () => {
     if (!addFriendValue.trim()) return;
     chrome.runtime.sendMessage({ type: 'add-friend', friendId: addFriendValue.trim() }, (res) => {
-      setStatus(res?.error || 'Request sent');
+      setToast(res?.error ? { text: res.error, tone: 'error' } : { text: 'Friend request sent', tone: 'success' });
       setAddFriendValue('');
       refresh();
     });
   };
 
   const acceptFriend = (id: string) => {
-    chrome.runtime.sendMessage({ type: 'accept-friend', friendId: id }, refresh);
+    chrome.runtime.sendMessage({ type: 'accept-friend', friendId: id }, (res) => {
+      setToast(res?.error ? { text: res.error, tone: 'error' } : { text: 'Friend added', tone: 'success' });
+      refresh();
+    });
   };
 
   const blockFriend = (id: string) => {
-    chrome.runtime.sendMessage({ type: 'block-friend', friendId: id }, refresh);
+    chrome.runtime.sendMessage({ type: 'block-friend', friendId: id }, (res) => {
+      setToast(res?.error ? { text: res.error, tone: 'error' } : { text: 'Blocked', tone: 'success' });
+      refresh();
+    });
   };
 
   const sendEffect = () => {
     if (!selectedFriend) {
-      setStatus('Pick a friend first');
+      setToast({ text: 'Pick a friend first', tone: 'error' });
       return;
     }
     chrome.runtime.sendMessage({ type: 'send-effect', friendId: selectedFriend, effectId: selectedEffect }, (res) => {
-      setStatus(res?.error || (res?.delivered ? 'Sent!' : 'Queued'));
+      setToast(
+        res?.error
+          ? { text: res.error, tone: 'error' }
+          : { text: res?.delivered ? 'Animation sent' : 'Queued', tone: 'success' }
+      );
     });
   };
 
@@ -66,13 +76,25 @@ const Popup: React.FC = () => {
           type: 'effects:deliver',
           payload: { id: selectedEffect, from: 'preview', to: 'preview', sentAt: Date.now() }
         });
-        setStatus('Preview sent to this tab');
+        setToast({ text: 'Preview sent to this tab', tone: 'info' });
       }
     });
   };
 
   const openPaywall = () => chrome.runtime.sendMessage({ type: 'open-paywall', context: 'popup' });
-  const openLogin = () => chrome.runtime.sendMessage({ type: 'open-login' });
+  const openLogin = () => chrome.runtime.sendMessage({ type: 'open-login' }, (res) => {
+    if (res?.error) setToast({ text: `Login failed: ${res.error}`, tone: 'error' });
+  });
+
+  useEffect(() => {
+    const handler = (msg: any) => {
+      if (msg?.type === 'account-updated') {
+        setToast({ text: 'Signed in!', tone: 'success' });
+      }
+    };
+    chrome.runtime.onMessage.addListener(handler);
+    return () => chrome.runtime.onMessage.removeListener(handler);
+  }, []);
 
   if (loading || !state) {
     return (
@@ -231,7 +253,7 @@ const Popup: React.FC = () => {
         </section>
       )}
 
-      {status ? <p className="status">{status}</p> : null}
+      {toast ? <div className={`toast ${toast.tone ?? 'info'}`}>{toast.text}</div> : null}
     </div>
   );
 };
