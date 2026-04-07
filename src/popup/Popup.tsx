@@ -16,7 +16,7 @@ const Popup: React.FC = () => {
   const receiveLabel = state?.receiveEnabled ? 'Receiving On' : 'Receiving Off';
   const isLoggedIn = !!state?.account?.accountId;
   const isPro = state?.account?.plan === 'pro';
-  const showPro = isLoggedIn && acceptedFriends.length > 0;
+  const showPro = isLoggedIn; // show upgrade only after sign-in
   const availableEffects = useMemo(
     () => EFFECTS.filter((fx) => (fx.pro ? showPro : true)),
     [showPro]
@@ -112,7 +112,7 @@ const Popup: React.FC = () => {
             <div className="demo-card">🛟 Receive toggle & mute</div>
             <div className="demo-card">🧑‍🤝‍🧑 Friend-only sending</div>
           </div>
-          <button className="button-cta google" onClick={openLogin}>Sign in with Google</button>
+          <button className="button-cta google" onClick={openLogin}>Sign in with Google (Supabase)</button>
           <div className="steps">
             <div className="step">1. Sign in with Google</div>
             <div className="step">2. Add a friend code</div>

@@ -5,6 +5,7 @@ import {
   BACKEND_BASE,
   HUB_BASE,
   PAYMENT_URL,
+  LOGIN_URL,
   POLL_INTERVAL_MS,
   RATE_LIMIT_BASE_MS,
   RATE_LIMIT_PRO_MS,
@@ -95,7 +96,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse(await sendEffect(message.friendId, message.effectId as EffectId));
         break;
       case 'open-login':
-        await chrome.tabs.create({ url: `${HUB_BASE}/login` });
+        await chrome.tabs.create({ url: LOGIN_URL });
         sendResponse({ ok: true });
         break;
       case 'open-paywall':

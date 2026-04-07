@@ -4,6 +4,7 @@ export const SOURCE = 'chrome-extension';
 export const HUB_BASE = 'https://extensions-hub-sites.vercel.app';
 export const PAYMENT_PATH = '/sketch-party/payment';
 export const PAYMENT_URL = `${HUB_BASE}${PAYMENT_PATH}`;
+export const LOGIN_URL = `${HUB_BASE}/sketch-party/login`;
 export const BACKEND_BASE = 'https://harika-extensions-backend.notetaker-app-burak.workers.dev';
 export const ANALYTICS_ENDPOINT = `${BACKEND_BASE}/api/analytics/events/batch`;
 
