@@ -124,12 +124,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
-const parseHashParams = (url: string) => {
-  const hash = url.split('#')[1] || '';
-  const params = new URLSearchParams(hash);
-  const obj: Record<string, string> = {};
-  params.forEach((v, k) => (obj[k] = v));
-  return obj;
+const base64Url = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const randomVerifier = () => base64Url(crypto.getRandomValues(new Uint8Array(32)));
+
+const sha256 = async (str: string) => {
+  const enc = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', enc);
+  return base64Url(hash);
 };
 
 const fetchSupabaseUser = async (accessToken: string) => {
@@ -144,37 +151,54 @@ const fetchSupabaseUser = async (accessToken: string) => {
   return (await res.json()) as { id: string; email: string };
 };
 
+const exchangeCodeForSession = async (code: string, codeVerifier: string) => {
+  if (!SUPABASE_ANON_KEY) throw new Error('Supabase anon key missing');
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=pkce`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify({ auth_code: code, code_verifier: codeVerifier })
+  });
+  if (!res.ok) throw new Error('Token exchange failed');
+  return res.json() as Promise<{ access_token: string; user: { id: string; email: string } }>;
+};
+
 const launchSupabaseLogin = async (respond: (res: any) => void) => {
   const redirect = chrome.identity.getRedirectURL();
-  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirect)}&scope=openid%20email%20profile`;
-  chrome.identity.launchWebAuthFlow(
-    { url: authUrl, interactive: true },
-    async (responseUrl) => {
-      if (chrome.runtime.lastError) {
-        respond({ ok: false, error: chrome.runtime.lastError.message });
-        return;
-      }
-      if (!responseUrl) {
-        respond({ ok: false, error: 'No response URL' });
-        return;
-      }
-      const hashParams = parseHashParams(responseUrl);
-      const accessToken = hashParams['access_token'];
-      if (!accessToken) {
-        respond({ ok: false, error: 'Missing access token' });
-        return;
-      }
-      try {
-        const user = await fetchSupabaseUser(accessToken);
-        state.account = { accountId: user.id, email: user.email, plan: 'free', accessToken };
-        await storage.setAccount(state.account);
-        await enqueueEvent({ eventName: 'login', clientId: state.clientId, accountId: user.id, email: user.email });
-        respond({ ok: true, account: state.account });
-      } catch (err: any) {
-        respond({ ok: false, error: err?.message || 'Login failed' });
-      }
+  const verifier = randomVerifier();
+  const challenge = await sha256(verifier);
+  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
+    redirect
+  )}&response_type=code&code_challenge=${challenge}&code_challenge_method=S256&scope=openid%20email%20profile`;
+
+  chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
+    if (chrome.runtime.lastError) {
+      respond({ ok: false, error: chrome.runtime.lastError.message });
+      return;
     }
-  );
+    if (!responseUrl) {
+      respond({ ok: false, error: 'No response URL' });
+      return;
+    }
+    const url = new URL(responseUrl);
+    const code = url.searchParams.get('code');
+    if (!code) {
+      respond({ ok: false, error: 'Missing authorization code' });
+      return;
+    }
+    try {
+      const session = await exchangeCodeForSession(code, verifier);
+      const user = session.user;
+      state.account = { accountId: user.id, email: user.email, plan: 'free', accessToken: session.access_token };
+      await storage.setAccount(state.account);
+      await enqueueEvent({ eventName: 'login', clientId: state.clientId, accountId: user.id, email: user.email });
+      respond({ ok: true, account: state.account });
+    } catch (err: any) {
+      respond({ ok: false, error: err?.message || 'Login failed' });
+    }
+  });
 };
 
 const getUiState = async () => ({
