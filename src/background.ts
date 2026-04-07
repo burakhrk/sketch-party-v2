@@ -150,10 +150,12 @@ const launchSupabaseLogin = async (respond: (res: any) => void) => {
   chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
     if (chrome.runtime.lastError) {
       respond({ ok: false, error: chrome.runtime.lastError.message });
+      chrome.runtime.sendMessage({ type: 'auth-debug', message: `launchWebAuthFlow error: ${chrome.runtime.lastError.message}` });
       return;
     }
     if (!responseUrl) {
       respond({ ok: false, error: 'No response URL' });
+      chrome.runtime.sendMessage({ type: 'auth-debug', message: 'No responseUrl returned' });
       return;
     }
     // Supabase implicit flow returns tokens in hash fragment
@@ -162,8 +164,15 @@ const launchSupabaseLogin = async (respond: (res: any) => void) => {
     const accessToken = params.get('access_token');
     const email = params.get('email') || undefined;
     const returnedState = params.get('state');
+    chrome.runtime.sendMessage({
+      type: 'auth-debug',
+      message: `Returned URL: ${responseUrl}`,
+      returnedState,
+      expectedState: state.oauthState
+    });
     if (state.oauthState && returnedState !== state.oauthState) {
       respond({ ok: false, error: 'OAuth state mismatch' });
+      chrome.runtime.sendMessage({ type: 'auth-debug', message: 'State mismatch' });
       return;
     }
     state.oauthState = undefined;

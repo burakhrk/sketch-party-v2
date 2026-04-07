@@ -31,6 +31,8 @@ export const useExtensionState = () => {
     const listener = (msg: any) => {
       if (msg?.type === 'account-updated') {
         refresh();
+      } else if (msg?.type === 'auth-debug') {
+        console.log('[Auth Debug]', msg);
       }
     };
     chrome.runtime.onMessage.addListener(listener);

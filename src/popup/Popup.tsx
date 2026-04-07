@@ -99,6 +99,9 @@ const Popup: React.FC = () => {
     const handler = (msg: any) => {
       if (msg?.type === 'account-updated') {
         setToast({ text: 'Signed in!', tone: 'success' });
+      } else if (msg?.type === 'auth-debug') {
+        setToast({ text: msg.message || 'Auth debug', tone: 'info' });
+        console.log('[Auth Debug]', msg);
       }
     };
     chrome.runtime.onMessage.addListener(handler);
